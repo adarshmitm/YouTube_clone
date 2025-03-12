@@ -1,36 +1,38 @@
-const Channel = require("../models/Channel");
+import Channel from '../models/Channel.js';
 
-exports.createChannel = async (req, res) => {
-  try {
-    const newChannel = new Channel({ ...req.body, owner: req.user.id });
-    await newChannel.save();
-    res.status(201).json(newChannel);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+export const createChannel = async (req, res) => {
+    try {
+        const { name, description, banner } = req.body;
+        const owner = req.user.id;
+
+        const newChannel = new Channel({ name, description, banner, owner });
+        await newChannel.save();
+
+        res.status(201).json({ message: "Channel created successfully", channel: newChannel });
+    } catch (error) {
+        res.status(500).json({ message: "Server Error" });
+    }
 };
 
-exports.getChannel = async (req, res) => {
-  try {
-    const channel = await Channel.findById(req.params.id).populate("owner", "username");
-    if (!channel) return res.status(404).json({ message: "Channel not found" });
-    res.json(channel);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+export const getChannel = async (req, res) => {
+    try {
+        const channel = await Channel.findById(req.params.id).populate('videos');
+        res.status(200).json(channel);
+    } catch (error) {
+        res.status(500).json({ message: "Server Error" });
+    }
 };
 
-exports.deleteChannel = async (req, res) => {
-  try {
-    const channel = await Channel.findById(req.params.id);
-    if (!channel) return res.status(404).json({ message: "Channel not found" });
-
-    if (channel.owner.toString() !== req.user.id)
-      return res.status(403).json({ message: "Not authorized" });
-
-    await channel.remove();
-    res.json({ message: "Channel deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+export const subscribeChannel = async (req, res) => {
+    try {
+        const channel = await Channel.findById(req.params.id);
+        if (!channel.subscribers.includes(req.user.id)) {
+            channel.subscribers.push(req.user.id);
+            await channel.save();
+            return res.status(200).json({ message: "Subscribed" });
+        }
+        res.status(400).json({ message: "Already subscribed" });
+    } catch (error) {
+        res.status(500).json({ message: "Server Error" });
+    }
 };

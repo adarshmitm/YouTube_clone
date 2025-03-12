@@ -1,60 +1,78 @@
-const Video = require("../models/Video");
+import Video from '../models/Video.js';
+import { v4 as uuidv4 } from 'uuid';
+import fs from 'fs';
 
-exports.addVideo = async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: "No video file uploaded" });
+export const uploadVideo = async (req, res) => {
+    try {
+        const { title, description } = req.body;
+        const userId = req.user.id;
+
+        if (!req.file) return res.status(400).json({ message: "No video file uploaded" });
+
+        const videoId = uuidv4();
+        const filePath = `uploads/${videoId}.mp4`;
+
+        fs.writeFileSync(filePath, req.file.buffer);
+
+        const newVideo = new Video({
+            title,
+            description,
+            videoUrl: filePath,
+            uploader: userId
+        });
+
+        await newVideo.save();
+        res.status(201).json({ message: "Video uploaded successfully", video: newVideo });
+
+    } catch (error) {
+        res.status(500).json({ message: "Server Error" });
     }
+};
 
-    const newVideo = new Video({
-      title: req.body.title,
-      description: req.body.description,
-      thumbnailUrl: req.body.thumbnailUrl, // Handle separately (optional)
-      uploader: req.user.id,
-      videoUrl: `/uploads/videos/${req.file.filename}`, // Store video path
-      views: 0,
-      likes: 0,
-      dislikes: 0,
-      uploadDate: new Date(),
-    });
+export const getVideos = async (req, res) => {
+    try {
+        const videos = await Video.find().sort({ createdAt: -1 });
+        res.status(200).json(videos);
+    } catch (error) {
+        res.status(500).json({ message: "Server Error" });
+    }
+};
 
-    await newVideo.save();
-    res.status(201).json(newVideo);
+export const getVideoById = async (req, res) => {
+    try {
+        const video = await Video.findById(req.params.id);
+        if (!video) return res.status(404).json({ message: "Video not found" });
+
+        res.status(200).json(video);
+    } catch (error) {
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
+export const likeVideo = async (req, res) => {
+  try {
+      const video = await Video.findById(req.params.videoId);
+      if (!video.likes.includes(req.user.id)) {
+          video.likes.push(req.user.id);
+          await video.save();
+          return res.status(200).json({ message: "Liked" });
+      }
+      res.status(400).json({ message: "Already liked" });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+      res.status(500).json({ message: "Server Error" });
   }
 };
 
-exports.getVideos = async (req, res) => {
+export const dislikeVideo = async (req, res) => {
   try {
-    const videos = await Video.find().populate("uploader", "username");
-    res.json(videos);
+      const video = await Video.findById(req.params.videoId);
+      if (!video.dislikes.includes(req.user.id)) {
+          video.dislikes.push(req.user.id);
+          await video.save();
+          return res.status(200).json({ message: "Disliked" });
+      }
+      res.status(400).json({ message: "Already disliked" });
   } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.getVideoById = async (req, res) => {
-  try {
-    const video = await Video.findById(req.params.id).populate("uploader", "username");
-    if (!video) return res.status(404).json({ message: "Video not found" });
-    res.json(video);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.deleteVideo = async (req, res) => {
-  try {
-    const video = await Video.findById(req.params.id);
-    if (!video) return res.status(404).json({ message: "Video not found" });
-
-    if (video.uploader.toString() !== req.user.id)
-      return res.status(403).json({ message: "Not authorized" });
-
-    await video.remove();
-    res.json({ message: "Video deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+      res.status(500).json({ message: "Server Error" });
   }
 };

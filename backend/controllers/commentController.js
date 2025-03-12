@@ -1,35 +1,24 @@
-const Comment = require("../models/Comment");
+import Comment from '../models/Comment.js';
 
-exports.addComment = async (req, res) => {
-  try {
-    const newComment = new Comment({ ...req.body, user: req.user.id });
-    await newComment.save();
-    res.status(201).json(newComment);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+export const addComment = async (req, res) => {
+    try {
+        const { videoId, text } = req.body;
+        const userId = req.user.id;
+
+        const newComment = new Comment({ videoId, userId, text });
+        await newComment.save();
+
+        res.status(201).json({ message: "Comment added", comment: newComment });
+    } catch (error) {
+        res.status(500).json({ message: "Server Error" });
+    }
 };
 
-exports.getComments = async (req, res) => {
-  try {
-    const comments = await Comment.find({ video: req.params.videoId }).populate("user", "username");
-    res.json(comments);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.deleteComment = async (req, res) => {
-  try {
-    const comment = await Comment.findById(req.params.id);
-    if (!comment) return res.status(404).json({ message: "Comment not found" });
-
-    if (comment.user.toString() !== req.user.id)
-      return res.status(403).json({ message: "Not authorized" });
-
-    await comment.remove();
-    res.json({ message: "Comment deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+export const getComments = async (req, res) => {
+    try {
+        const comments = await Comment.find({ videoId: req.params.videoId }).populate('userId', 'username avatar');
+        res.status(200).json(comments);
+    } catch (error) {
+        res.status(500).json({ message: "Server Error" });
+    }
 };

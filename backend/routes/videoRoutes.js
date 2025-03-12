@@ -1,38 +1,26 @@
-const express = require("express");
-const multer = require("multer");
-const path = require("path");
-const { addVideo, getVideos, getVideoById, deleteVideo } = require("../controllers/videoController");
-const authMiddleware = require("../middleware/authMiddleware");
+import express from 'express';
+import multer from 'multer';
+import { uploadVideo, getVideos, getVideoById, likeVideo, dislikeVideo } from '../controllers/videoController.js';
+import authMiddleware from '../middleware/authMiddleware.js';
 
 const router = express.Router();
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
-// Multer Storage Configuration
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/videos/"); // Folder where videos will be stored
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`); // Unique filename
-  },
+router.post('/upload', authMiddleware, upload.single('video'), uploadVideo);
+router.get('/', getVideos);
+router.get('/:id', getVideoById);
+router.post('/like/:videoId', authMiddleware, likeVideo);
+router.post('/dislike/:videoId', authMiddleware, dislikeVideo);
+router.get('/search/:query', async (req, res) => {
+  try {
+      const query = req.params.query;
+      const videos = await Video.find({ title: { $regex: query, $options: 'i' } });
+      res.status(200).json(videos);
+  } catch (error) {
+      res.status(500).json({ message: "Server Error" });
+  }
 });
 
-// File Filter to accept only videos
-const fileFilter = (req, file, cb) => {
-  const allowedMimeTypes = ["video/mp4", "video/mkv", "video/avi", "video/mov"];
-  if (allowedMimeTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error("Invalid file type. Only video files are allowed!"), false);
-  }
-};
 
-// Multer Upload Middleware
-const upload = multer({ storage, fileFilter });
-
-// Routes
-router.post("/", authMiddleware, upload.single("video"), addVideo);
-router.get("/", getVideos);
-router.get("/:id", getVideoById);
-router.delete("/:id", authMiddleware, deleteVideo);
-
-module.exports = router;
+export default router;

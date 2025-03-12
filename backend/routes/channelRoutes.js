@@ -1,11 +1,11 @@
-const express = require("express");
-const { createChannel, getChannel, deleteChannel } = require("../controllers/channelController");
-const authMiddleware = require("../middleware/authMiddleware");
+import express from 'express';
+import { createChannel, getChannel, subscribeChannel } from '../controllers/channelController.js';
+import authMiddleware from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.post("/", authMiddleware, createChannel);
-router.get("/:id", getChannel);
-router.delete("/:id", authMiddleware, deleteChannel);
+router.post('/create', authMiddleware, createChannel);
+router.get('/:id', getChannel);
+router.post('/subscribe/:id', authMiddleware, subscribeChannel);
 
-module.exports = router;
+export default router;

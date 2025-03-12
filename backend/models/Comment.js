@@ -1,10 +1,9 @@
-const mongoose = require("mongoose");
+import mongoose from 'mongoose';
 
 const CommentSchema = new mongoose.Schema({
-  text: { type: String, required: true },
-  user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  video: { type: mongoose.Schema.Types.ObjectId, ref: "Video" },
-  timestamp: { type: Date, default: Date.now },
-});
+    videoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Video', required: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    text: { type: String, required: true },
+}, { timestamps: true });
 
-module.exports = mongoose.model("Comment", CommentSchema);
+export default mongoose.model('Comment', CommentSchema);
