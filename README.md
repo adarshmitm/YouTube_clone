@@ -60,7 +60,11 @@ npm install
 
 Create a .env file in backend/ and add:
 
-YOUTUBE_API_KEY=YOUR_YOUTUBE_API_KEY
+MONGO_URI=YOUR_MONGODB_ADDRESS
+
+JWT_SECRET=SECERATE_KEY
+
+PORT=PORT
 
 Start the backend server:
 
